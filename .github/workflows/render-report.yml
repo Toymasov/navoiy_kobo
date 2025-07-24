@@ -43,6 +43,8 @@ jobs:
           KOBO_TOKEN: ${{ secrets.KOBO_TOKEN }}
 
       # 6. Yangilangan fayllarni avtomatik commit qilish va push qilish
+      - name: Eng so'nggi o'zgarishlarni tortib olish (rebase bilan)
+        run: git pull origin main --rebase
       - name: O'zgarishlarni commit qilish
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
