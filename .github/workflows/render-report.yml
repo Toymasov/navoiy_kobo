@@ -19,13 +19,13 @@ jobs:
       - name: Repozitoriy kodini olish
         uses: actions/checkout@v4
         with:
-          # `git pull` ishlashi uchun to'liq tarixni olish muhim
+          # Keyingi qadamlar uchun to'liq git tarixini olish muhim
           fetch-depth: 0
 
-      # 2-qadam: Serverdagi so'nggi versiyani darhol olish
-      # Bu "non-fast-forward" va "unstaged changes" xatolarining oldini oladi
-      - name: Eng so'nggi o'zgarishlarni tortib olish (rebase bilan)
-        run: git pull origin main --rebase
+      # 2-qadam: Mahalliy kodni serverdagi bilan majburiy sinxronlash
+      # Bu "unstaged changes" xatosining oldini oladi va ishni toza holatda boshlaydi.
+      - name: Ishchi maydonni tozalash va server bilan sinxronlash
+        run: git reset --hard origin/main
 
       # 3-qadam: R muhitini o'rnatish
       - name: R muhitini o'rnatish
