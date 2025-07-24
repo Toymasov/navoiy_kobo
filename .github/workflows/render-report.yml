@@ -1,53 +1,64 @@
-# Fayl nomi: .github/workflows/render-report.yml
-
 name: Har Soatda Hisobotni Yangilash
 
 on:
   schedule:
-    # Bu jadval bo'yicha avtomatik ishga tushiradi
-    - cron: '*/10 * * * *'
+    # Har soatning boshida (masalan, 13:00, 14:00) avtomatik ishga tushadi
+    - cron: '0 * * * *'
   
-  # BU QATOR SIZ SO'RAGAN TUGMANI YARATADI
+  # "Actions" bo'limida "Run workflow" tugmasini yaratadi (qo'lda ishga tushirish uchun)
   workflow_dispatch:
 
 jobs:
   render-and-commit:
     runs-on: ubuntu-latest
-    permissions:      # <--- MANA SHU BLOK QO'SHILADI
-      contents: write   # <--- Repozitoriyga yozish huquqini beradi
+    permissions:
+      # Repozitoriyga o'zgarishlarni yozish (push qilish) uchun ruxsat beradi
+      contents: write
     steps:
-      # 1. Repozitoriy kodini virtual mashinaga yuklab oladi
+      # 1-qadam: Repozitoriy kodini virtual mashinaga yuklab oladi
       - name: Repozitoriy kodini olish
         uses: actions/checkout@v4
 
-      # 2. R muhitini sozlash
+      # 2-qadam: R muhitini o'rnatish
       - name: R muhitini o'rnatish
         uses: r-lib/actions/setup-r@v2
         with:
           r-version: 'latest'
 
-      # 3. Quarto muhitini sozlash
+      # 3-qadam: Quarto muhitini o'rnatish
       - name: Quarto muhitini o'rnatish
         uses: quarto-dev/quarto-actions/setup@v2
 
-      # 4. Kerakli R paketlarini o'rnatish
-      # Sizning ikkala faylingiz uchun kerak bo'ladigan barcha paketlar
+      # 4-qadam: R paketlari uchun keshni sozlash (ish jarayonini tezlashtirish uchun)
+      - name: R paketlari keshini tiklash
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.R_LIBS_USER }}
+          key: ${{ runner.os }}-r-${{ hashFiles('**/lockfile') }}
+          restore-keys: |
+            ${{ runner.os }}-r-
+
+      # 5-qadam: Kerakli R paketlarini o'rnatish
+      # Bu yerda hisobot uchun kerak bo'ladigan barcha paketlar ro'yxati keltirilgan
       - name: R paketlarini o'rnatish
         run: Rscript -e "install.packages(c('httr', 'jsonlite', 'quarto', 'tidyverse', 'readxl', 'gt'))"
 
-      # 5. Render skriptini ishga tushirish
+      # 6-qadam: Hisobotni yaratuvchi R skriptini ishga tushirish
       - name: Hisobotni render qilish (update_report.R)
         run: Rscript update_report.R
         env:
-          # Bu yerda GitHub Secrets'dagi tokenni skriptga beramiz
+          # GitHub Secrets'dagi KOBO_TOKEN'ni R skriptiga o'zgaruvchi sifatida uzatadi
           KOBO_TOKEN: ${{ secrets.KOBO_TOKEN }}
 
-      # 6. Yangilangan fayllarni avtomatik commit qilish va push qilish
+      # 7-qadam: O'zgarishlarni yuklashdan oldin serverdagi so'nggi versiyani olish
+      # Bu "non-fast-forward" xatosining oldini oladi
       - name: Eng so'nggi o'zgarishlarni tortib olish (rebase bilan)
         run: git pull origin main --rebase
+
+      # 8-qadam: Yangilangan fayllarni avtomatik commit qilish va push qilish
       - name: O'zgarishlarni commit qilish
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: "🤖 Hisobot avtomatik yangilandi"
-          # Qaysi fayllar o'zgarganini aniqlab, faqat shularni commit qiladi
+          # Qaysi fayllar yoki papkalar o'zgarganini aniqlab, faqat shularni commit qiladi
           file_pattern: report.html kobo_data.rds report_files/
