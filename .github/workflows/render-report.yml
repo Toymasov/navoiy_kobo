@@ -18,18 +18,26 @@ jobs:
       # 1-qadam: Repozitoriy kodini virtual mashinaga yuklab oladi
       - name: Repozitoriy kodini olish
         uses: actions/checkout@v4
+        with:
+          # `git pull` ishlashi uchun to'liq tarixni olish muhim
+          fetch-depth: 0
 
-      # 2-qadam: R muhitini o'rnatish
+      # 2-qadam: Serverdagi so'nggi versiyani darhol olish
+      # Bu "non-fast-forward" va "unstaged changes" xatolarining oldini oladi
+      - name: Eng so'nggi o'zgarishlarni tortib olish (rebase bilan)
+        run: git pull origin main --rebase
+
+      # 3-qadam: R muhitini o'rnatish
       - name: R muhitini o'rnatish
         uses: r-lib/actions/setup-r@v2
         with:
           r-version: 'latest'
 
-      # 3-qadam: Quarto muhitini o'rnatish
+      # 4-qadam: Quarto muhitini o'rnatish
       - name: Quarto muhitini o'rnatish
         uses: quarto-dev/quarto-actions/setup@v2
 
-      # 4-qadam: R paketlari uchun keshni sozlash (ish jarayonini tezlashtirish uchun)
+      # 5-qadam: R paketlari uchun keshni sozlash (ish jarayonini tezlashtirish uchun)
       - name: R paketlari keshini tiklash
         uses: actions/cache@v4
         with:
@@ -38,22 +46,16 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-r-
 
-      # 5-qadam: Kerakli R paketlarini o'rnatish
-      # Bu yerda hisobot uchun kerak bo'ladigan barcha paketlar ro'yxati keltirilgan
+      # 6-qadam: Kerakli R paketlarini o'rnatish
       - name: R paketlarini o'rnatish
         run: Rscript -e "install.packages(c('httr', 'jsonlite', 'quarto', 'tidyverse', 'readxl', 'gt'))"
 
-      # 6-qadam: Hisobotni yaratuvchi R skriptini ishga tushirish
+      # 7-qadam: Hisobotni yaratuvchi R skriptini ishga tushirish
       - name: Hisobotni render qilish (update_report.R)
         run: Rscript update_report.R
         env:
           # GitHub Secrets'dagi KOBO_TOKEN'ni R skriptiga o'zgaruvchi sifatida uzatadi
           KOBO_TOKEN: ${{ secrets.KOBO_TOKEN }}
-
-      # 7-qadam: O'zgarishlarni yuklashdan oldin serverdagi so'nggi versiyani olish
-      # Bu "non-fast-forward" xatosining oldini oladi
-      - name: Eng so'nggi o'zgarishlarni tortib olish (rebase bilan)
-        run: git pull origin main --rebase
 
       # 8-qadam: Yangilangan fayllarni avtomatik commit qilish va push qilish
       - name: O'zgarishlarni commit qilish
